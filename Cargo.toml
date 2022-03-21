@@ -1,0 +1,19 @@
+[package]
+name = "hash_bench"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+blake3 = "1.3"
+blake2 = "0.10"
+md5 = "0.7"
+
+[dev-dependencies]
+criterion = "0.3"
+rand = "0.8"
+
+[[bench]]
+name = "hash_bench"
+harness = false
