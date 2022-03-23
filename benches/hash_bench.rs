@@ -125,6 +125,28 @@ impl Hasher for Blake3Hasher64 {
     }
 }
 
+struct Crc32Hasher {
+    hasher: crc32fast::Hasher,
+}
+
+impl Crc32Hasher {
+    fn new() -> Self {
+        Self {
+            hasher: crc32fast::Hasher::new(),
+        }
+    }
+}
+
+impl Hasher for Crc32Hasher {
+    type Output = [u8; 4];
+    fn hash(mut self, chunks: &[u8], chunk_size: usize) -> Self::Output {
+        for c in chunks.chunks(chunk_size) {
+            self.hasher.update(&c);
+        }
+        self.hasher.finalize().to_be_bytes()
+    }
+}
+
 fn bench(c: &mut Criterion) {
     let mut bytes = vec![0; 1 << 20];
     rand::thread_rng().fill_bytes(&mut bytes);
@@ -207,6 +229,23 @@ fn bench(c: &mut Criterion) {
             |b, cs| {
                 b.iter(|| {
                     let hasher = Blake3Hasher64::new();
+                    hasher.hash(&bytes, *cs);
+                })
+            },
+        );
+    }
+    group.finish();
+
+    let mut group = c.benchmark_group("crc32");
+    for i in 0..16 {
+        let chunk_size = 16 << i;
+        group.throughput(Throughput::Bytes(bytes.len() as u64));
+        group.bench_with_input(
+            BenchmarkId::from_parameter(chunk_size),
+            &chunk_size,
+            |b, cs| {
+                b.iter(|| {
+                    let hasher = Crc32Hasher::new();
                     hasher.hash(&bytes, *cs);
                 })
             },
